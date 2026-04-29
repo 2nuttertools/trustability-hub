@@ -72,6 +72,18 @@ export async function ensureSchema(): Promise<void> {
   `;
   await sql`create index if not exists projects_featured_idx on projects (featured) where featured;`;
   await sql`create index if not exists projects_sort_idx on projects (sort_order, updated_at desc);`;
+
+  await sql`
+    create table if not exists articles (
+      slug         text primary key,
+      data         jsonb not null,
+      published_at date not null default current_date,
+      created_at   timestamptz not null default now(),
+      updated_at   timestamptz not null default now(),
+      updated_by   uuid references admins(id) on delete set null
+    );
+  `;
+  await sql`create index if not exists articles_pub_idx on articles (published_at desc);`;
 }
 
 export async function hasAnyProject(): Promise<boolean> {

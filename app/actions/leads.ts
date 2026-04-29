@@ -1,5 +1,7 @@
 "use server";
 
+import { ensureSchema, getSql, isDbConfigured } from "@/lib/db";
+
 export interface LeadInput {
   name: string;
   phone: string;
@@ -14,22 +16,34 @@ export type SubmitLeadResult =
   | { ok: true }
   | { ok: false; error: string };
 
-/**
- * NOTE: email/notification not wired yet. Submissions are logged to the server
- * console only. To deliver leads, wire up Resend (or similar) inside this
- * function — call sites and return shape stay the same.
- */
 export async function submitLead(payload: LeadInput): Promise<SubmitLeadResult> {
   if (!payload.name?.trim() || !payload.phone?.trim()) {
     return { ok: false, error: "กรุณากรอกชื่อและเบอร์โทร" };
   }
 
-  console.log("[lead]", {
-    at: new Date().toISOString(),
-    ...payload,
-    name: payload.name.trim(),
-    phone: payload.phone.trim(),
-  });
+  if (!isDbConfigured) {
+    console.log("[lead/no-db]", payload);
+    return { ok: true };
+  }
 
-  return { ok: true };
+  try {
+    await ensureSchema();
+    const sql = getSql();
+    await sql`
+      insert into leads (name, phone, email, budget, message, project_slug, source)
+      values (
+        ${payload.name.trim()},
+        ${payload.phone.trim()},
+        ${payload.email?.trim() || null},
+        ${payload.budget?.trim() || null},
+        ${payload.message?.trim() || null},
+        ${payload.project_slug ?? null},
+        ${payload.source ?? "website"}
+      )
+    `;
+    return { ok: true };
+  } catch (e) {
+    console.error("[lead/insert] error:", e);
+    return { ok: false, error: "ส่งข้อมูลไม่สำเร็จ กรุณาลองใหม่" };
+  }
 }

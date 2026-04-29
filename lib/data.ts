@@ -159,6 +159,17 @@ export async function getProjectSlugs(): Promise<string[]> {
 }
 
 export async function getArticles(limit = 6): Promise<Article[]> {
+  if (isDbConfigured) {
+    try {
+      const sql = getSql();
+      const rows = await sql<{ data: Article }[]>`
+        select data from articles order by published_at desc, updated_at desc limit ${limit}
+      `;
+      if (rows.length > 0) return rows.map((r) => r.data);
+    } catch {
+      // fall through to JSON
+    }
+  }
   return allArticles.slice(0, limit);
 }
 

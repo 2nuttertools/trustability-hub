@@ -19,9 +19,10 @@ export default async function AdminDashboard() {
 
   const projects = await getProjects();
 
-  // Lead stats
+  // Lead stats + admin count + article count
   let leadStats = { total: 0, new: 0 };
   let adminCount = 1;
+  let articleCount = 3;
   try {
     const sql = getSql();
     const [leadRows] = await sql<{ total: string; new_count: string }[]>`
@@ -30,6 +31,8 @@ export default async function AdminDashboard() {
     leadStats = { total: Number(leadRows.total), new: Number(leadRows.new_count) };
     const [adminRow] = await sql<{ c: string }[]>`select count(*)::text as c from admins`;
     adminCount = Number(adminRow.c);
+    const [articleRow] = await sql<{ c: string }[]>`select count(*)::text as c from articles`;
+    articleCount = Number(articleRow.c);
   } catch {
     // Tables may not have any rows yet — defaults are fine
   }
@@ -45,7 +48,7 @@ export default async function AdminDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard icon={Home} label="โครงการ" value={`${projects.length}`} href="/admin/projects" color="from-brand-500 to-brand-700" />
         <StatCard icon={Inbox} label="Leads ใหม่" value={`${leadStats.new}`} hint={`รวม ${leadStats.total} รายการ`} href="/admin/leads" color="from-emerald-500 to-emerald-700" />
-        <StatCard icon={Newspaper} label="บทความ" value="3" href="/admin/articles" color="from-amber-500 to-orange-600" />
+        <StatCard icon={Newspaper} label="บทความ" value={`${articleCount}`} href="/admin/articles" color="from-amber-500 to-orange-600" />
         <StatCard icon={Users} label="ผู้ดูแล" value={`${adminCount}`} href={admin.role === "super-admin" ? "/admin/users" : "#"} color="from-purple-500 to-pink-600" />
       </div>
 
@@ -76,15 +79,6 @@ export default async function AdminDashboard() {
         />
       </div>
 
-      {/* Phase notice */}
-      <div className="mt-10 p-5 rounded-2xl bg-amber-50 border border-amber-200">
-        <p className="text-sm font-semibold text-amber-900 mb-1">🚧 Admin Console — Phase 1</p>
-        <p className="text-xs text-amber-800 leading-relaxed">
-          ตอนนี้ระบบ Login + Auth + Dashboard ใช้งานได้แล้ว
-          อยู่ระหว่างพัฒนา Phase 2 (Projects CRUD + Image upload)
-          และ Phase 3 (Users + Leads management)
-        </p>
-      </div>
     </AdminShell>
   );
 }
