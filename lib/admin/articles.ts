@@ -4,10 +4,15 @@ import articlesJson from "@/data/articles.json";
 
 const seed = articlesJson as Article[];
 
+let _seedChecked = false;
 export async function seedArticlesIfEmpty(): Promise<{ seeded: number }> {
+  if (_seedChecked) return { seeded: 0 };
   const sql = getSql();
   const [{ count }] = await sql<{ count: string }[]>`select count(*)::text as count from articles`;
-  if (Number(count) > 0) return { seeded: 0 };
+  if (Number(count) > 0) {
+    _seedChecked = true;
+    return { seeded: 0 };
+  }
   let seeded = 0;
   for (const a of seed) {
     await sql`
@@ -17,6 +22,7 @@ export async function seedArticlesIfEmpty(): Promise<{ seeded: number }> {
     `;
     seeded++;
   }
+  _seedChecked = true;
   return { seeded };
 }
 

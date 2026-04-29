@@ -24,10 +24,28 @@ export function getSql(): postgres.Sql {
 export const isDbConfigured = Boolean(url);
 
 /**
- * Idempotent schema setup. Safe to call multiple times.
- * Triggered automatically on first /admin/setup hit.
+ * Idempotent schema setup. Cached per Lambda lifetime — once a function instance
+ * has run it, subsequent calls are free.
+ *
+ * Note: Vercel cold-start spawns a fresh instance, so the first request after
+ * inactivity still pays the schema-init cost. The DDL statements are no-ops
+ * once tables exist, so the cost is mostly Postgres round-trips (~100-300ms).
  */
-export async function ensureSchema(): Promise<void> {
+let _schemaPromise: Promise<void> | null = null;
+export function ensureSchema(): Promise<void> {
+  if (_schemaPromise) return _schemaPromise;
+  _schemaPromise = (async () => {
+    try {
+      await runSchemaSetup();
+    } catch (e) {
+      _schemaPromise = null; // allow retry on transient failures
+      throw e;
+    }
+  })();
+  return _schemaPromise;
+}
+
+async function runSchemaSetup(): Promise<void> {
   const sql = getSql();
   await sql`
     create table if not exists admins (

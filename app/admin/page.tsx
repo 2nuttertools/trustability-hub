@@ -11,30 +11,38 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminDashboard() {
   if (!isDbConfigured) redirect("/admin/setup");
-  const hasAdmin = await hasAnyAdmin().catch(() => false);
-  if (!hasAdmin) redirect("/admin/setup");
 
-  const admin = await getCurrentAdmin();
-  if (!admin) redirect("/admin/login");
+  // If user has a session, getCurrentAdmin() loading the row is enough proof
+  // the admins table exists and has data — skip the extra hasAnyAdmin() round-trip.
+  const admin = await getCurrentAdmin().catch(() => null);
+  if (!admin) {
+    if (!(await hasAnyAdmin().catch(() => false))) redirect("/admin/setup");
+    redirect("/admin/login");
+  }
 
-  const projects = await getProjects();
-
-  // Lead stats + admin count + article count
+  // Run all dashboard queries in parallel — saves ~3x round-trip latency.
   let leadStats = { total: 0, new: 0 };
   let adminCount = 1;
   let articleCount = 3;
+  let projectCount = 0;
   try {
     const sql = getSql();
-    const [leadRows] = await sql<{ total: string; new_count: string }[]>`
-      select count(*)::text as total, count(*) filter (where status = 'new')::text as new_count from leads
-    `;
-    leadStats = { total: Number(leadRows.total), new: Number(leadRows.new_count) };
-    const [adminRow] = await sql<{ c: string }[]>`select count(*)::text as c from admins`;
-    adminCount = Number(adminRow.c);
-    const [articleRow] = await sql<{ c: string }[]>`select count(*)::text as c from articles`;
-    articleCount = Number(articleRow.c);
+    const [leadRows, adminRows, articleRows, projectRows] = await Promise.all([
+      sql<{ total: string; new_count: string }[]>`
+        select count(*)::text as total, count(*) filter (where status = 'new')::text as new_count from leads
+      `,
+      sql<{ c: string }[]>`select count(*)::text as c from admins`,
+      sql<{ c: string }[]>`select count(*)::text as c from articles`,
+      sql<{ c: string }[]>`select count(*)::text as c from projects`,
+    ]);
+    leadStats = { total: Number(leadRows[0].total), new: Number(leadRows[0].new_count) };
+    adminCount = Number(adminRows[0].c);
+    articleCount = Number(articleRows[0].c);
+    projectCount = Number(projectRows[0].c);
   } catch {
-    // Tables may not have any rows yet — defaults are fine
+    // Tables may not have any rows yet — fall back to JSON-derived count
+    const projects = await getProjects();
+    projectCount = projects.length;
   }
 
   return (
@@ -46,7 +54,7 @@ export default async function AdminDashboard() {
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard icon={Home} label="โครงการ" value={`${projects.length}`} href="/admin/projects" color="from-brand-500 to-brand-700" />
+        <StatCard icon={Home} label="โครงการ" value={`${projectCount}`} href="/admin/projects" color="from-brand-500 to-brand-700" />
         <StatCard icon={Inbox} label="Leads ใหม่" value={`${leadStats.new}`} hint={`รวม ${leadStats.total} รายการ`} href="/admin/leads" color="from-emerald-500 to-emerald-700" />
         <StatCard icon={Newspaper} label="บทความ" value={`${articleCount}`} href="/admin/articles" color="from-amber-500 to-orange-600" />
         <StatCard icon={Users} label="ผู้ดูแล" value={`${adminCount}`} href={admin.role === "super-admin" ? "/admin/users" : "#"} color="from-purple-500 to-pink-600" />

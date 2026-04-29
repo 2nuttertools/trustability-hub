@@ -6,12 +6,18 @@ const seedProjects = projectsJson as Project[];
 
 /**
  * Initialize the projects table from the JSON seed if empty.
- * Idempotent — safe to call from /admin/projects on every load.
+ * Cached per Lambda lifetime — once we've checked and the table is non-empty,
+ * subsequent calls return immediately without hitting the database.
  */
+let _seedChecked = false;
 export async function seedProjectsIfEmpty(): Promise<{ seeded: number }> {
+  if (_seedChecked) return { seeded: 0 };
   const sql = getSql();
   const [{ count }] = await sql<{ count: string }[]>`select count(*)::text as count from projects`;
-  if (Number(count) > 0) return { seeded: 0 };
+  if (Number(count) > 0) {
+    _seedChecked = true;
+    return { seeded: 0 };
+  }
 
   let seeded = 0;
   for (let i = 0; i < seedProjects.length; i++) {
@@ -23,6 +29,7 @@ export async function seedProjectsIfEmpty(): Promise<{ seeded: number }> {
     `;
     seeded++;
   }
+  _seedChecked = true;
   return { seeded };
 }
 
