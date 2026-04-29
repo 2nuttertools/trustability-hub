@@ -58,6 +58,26 @@ export async function ensureSchema(): Promise<void> {
   `;
   await sql`create index if not exists leads_status_idx on leads (status);`;
   await sql`create index if not exists leads_created_idx on leads (created_at desc);`;
+
+  await sql`
+    create table if not exists projects (
+      slug         text primary key,
+      data         jsonb not null,
+      featured     boolean not null default false,
+      sort_order   int not null default 0,
+      created_at   timestamptz not null default now(),
+      updated_at   timestamptz not null default now(),
+      updated_by   uuid references admins(id) on delete set null
+    );
+  `;
+  await sql`create index if not exists projects_featured_idx on projects (featured) where featured;`;
+  await sql`create index if not exists projects_sort_idx on projects (sort_order, updated_at desc);`;
+}
+
+export async function hasAnyProject(): Promise<boolean> {
+  const sql = getSql();
+  const rows = await sql<{ count: string }[]>`select count(*)::text as count from projects`;
+  return Number(rows[0]?.count ?? 0) > 0;
 }
 
 export async function hasAnyAdmin(): Promise<boolean> {

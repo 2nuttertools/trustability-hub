@@ -1,6 +1,7 @@
 import projectsJson from "@/data/projects.json";
 import articlesJson from "@/data/articles.json";
 import testimonialsJson from "@/data/testimonials.json";
+import { getSql, isDbConfigured } from "./db";
 
 export type ProjectType = "บ้านเดี่ยว" | "ทาวน์โฮม" | "คอนโด" | "Luxury Villa" | "Pool Villa";
 export type ProjectStatus = "พร้อมอยู่" | "Pre-sale" | "อยู่ระหว่างก่อสร้าง";
@@ -89,14 +90,42 @@ const sortedProjects = [...allProjects].sort((a, b) => {
 });
 
 // =====================================================================
-// Async accessors — keep the shape so pages don't change.
-// async lets us swap to a real DB later without touching callers.
+// Postgres-backed accessors with JSON fallback.
+// - When DB is configured, projects table is the source of truth.
+// - On first deploy the table is empty → JSON used until admin saves anything.
+// - Once admin edits in /admin, those rows live in Postgres permanently.
 // =====================================================================
+async function dbProjects(): Promise<Project[] | null> {
+  if (!isDbConfigured) return null;
+  try {
+    const sql = getSql();
+    const rows = await sql<{ data: Project }[]>`
+      select data from projects
+      order by featured desc, sort_order asc, updated_at desc
+    `;
+    if (rows.length === 0) return null;
+    return rows.map((r) => r.data);
+  } catch (err) {
+    console.warn("[data] DB read failed, falling back to JSON:", (err as Error).message);
+    return null;
+  }
+}
+
 export async function getProjects(): Promise<Project[]> {
-  return sortedProjects;
+  const fromDb = await dbProjects();
+  return fromDb ?? sortedProjects;
 }
 
 export async function getProjectBySlug(slug: string): Promise<Project | null> {
+  if (isDbConfigured) {
+    try {
+      const sql = getSql();
+      const rows = await sql<{ data: Project }[]>`select data from projects where slug = ${slug} limit 1`;
+      if (rows[0]) return rows[0].data;
+    } catch {
+      // fall through to JSON
+    }
+  }
   return allProjects.find((p) => p.slug === slug) ?? null;
 }
 
@@ -112,8 +141,9 @@ export async function getHouseType(
 }
 
 export async function getHouseTypeParams(): Promise<{ slug: string; type: string }[]> {
+  const projects = (await dbProjects()) ?? allProjects;
   const params: { slug: string; type: string }[] = [];
-  for (const p of allProjects) {
+  for (const p of projects) {
     if (!p.houseTypes) continue;
     for (const h of p.houseTypes) {
       params.push({ slug: p.slug, type: h.slug });
@@ -123,6 +153,8 @@ export async function getHouseTypeParams(): Promise<{ slug: string; type: string
 }
 
 export async function getProjectSlugs(): Promise<string[]> {
+  const fromDb = await dbProjects();
+  if (fromDb) return fromDb.map((p) => p.slug);
   return allProjects.map((p) => p.slug);
 }
 
