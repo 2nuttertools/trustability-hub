@@ -5,6 +5,7 @@ import { formatPriceFull } from "@/lib/utils";
 import { ProjectGallery } from "@/components/project-gallery";
 import { MortgageCalculator } from "@/components/mortgage-calculator";
 import { ProjectDetailClient } from "@/components/project-detail-client";
+import { HouseTypesSection } from "@/components/house-types-section";
 import {
   MapPin, Bed, Bath, Maximize, Car, Calendar, Building2,
   Star, ArrowLeft, Share2, Heart, Home, Sparkles, ChevronRight,
@@ -126,6 +127,11 @@ export default async function ProjectPage(props: PageProps<"/projects/[slug]">) 
               </h2>
               <p className="text-foreground/80 leading-relaxed">{project.description}</p>
             </section>
+
+            {/* House Types — only for projects with multiple house variants */}
+            {project.houseTypes && project.houseTypes.length > 0 && (
+              <HouseTypesSection projectSlug={project.slug} houseTypes={project.houseTypes} />
+            )}
 
             {/* Highlights */}
             <section>
