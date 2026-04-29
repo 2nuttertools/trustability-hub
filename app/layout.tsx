@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Noto_Sans_Thai } from "next/font/google";
 import "./globals.css";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
-import { FloatingContact } from "@/components/floating-contact";
 
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
@@ -34,10 +31,7 @@ export default function RootLayout({
       className={`${jakarta.variable} ${notoThai.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <Footer />
-        <FloatingContact />
+        {children}
       </body>
     </html>
   );
