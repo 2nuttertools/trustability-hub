@@ -1,0 +1,23 @@
+[
+  {
+    "name": "คุณวรรณภา ศรีสมบัติ",
+    "role": "นักธุรกิจ, กรุงเทพฯ",
+    "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80&auto=format&fit=crop",
+    "quote": "Trustability Hub ช่วยหาคอนโดที่ตรงตามความต้องการได้ภายใน 2 สัปดาห์ ทีมงานมืออาชีพมาก ดูแลตั้งแต่เริ่มจนถึงโอน",
+    "rating": 5
+  },
+  {
+    "name": "Mr. Wei Zhang",
+    "role": "Investor, Shanghai",
+    "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80&auto=format&fit=crop",
+    "quote": "Excellent service for foreign investors. They handled everything from legal advice to property management. Highly recommended!",
+    "rating": 5
+  },
+  {
+    "name": "คุณภัทรพล ดิลกชัย",
+    "role": "First-time Buyer",
+    "avatar": "https://images.unsplash.com/photo-1600486913747-55e5470d6f40?w=200&q=80&auto=format&fit=crop",
+    "quote": "ซื้อบ้านครั้งแรก ทีม Trustability Hub ให้คำปรึกษาดีมาก แนะนำเรื่องสินเชื่อ ภาษี ทุกขั้นตอนชัดเจน",
+    "rating": 5
+  }
+]
