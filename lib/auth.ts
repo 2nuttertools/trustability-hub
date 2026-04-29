@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { getIronSession, type SessionOptions } from "iron-session";
 import bcrypt from "bcryptjs";
-import { getSql } from "./db";
+import { getSql, ensureSchema } from "./db";
 
 export type AdminRole = "super-admin" | "admin";
 
@@ -49,12 +49,28 @@ export async function getCurrentAdmin(): Promise<AdminRow | null> {
   const session = await getSession();
   if (!session.userId) return null;
   const sql = getSql();
-  const rows = await sql<AdminRow[]>`
-    select id, username, email, password_hash, display_name, role,
-      created_at::text, last_login_at::text
-    from admins where id = ${session.userId} limit 1
-  `;
-  return rows[0] ?? null;
+  try {
+    const rows = await sql<AdminRow[]>`
+      select id, username, email, password_hash, display_name, role,
+        created_at::text, last_login_at::text
+      from admins where id = ${session.userId} limit 1
+    `;
+    return rows[0] ?? null;
+  } catch (e) {
+    // Likely missing username column on freshly-deployed migration.
+    // Run schema migration once and retry.
+    const msg = (e as Error).message ?? "";
+    if (msg.includes("column") && msg.includes("username")) {
+      await ensureSchema();
+      const rows = await sql<AdminRow[]>`
+        select id, username, email, password_hash, display_name, role,
+          created_at::text, last_login_at::text
+        from admins where id = ${session.userId} limit 1
+      `;
+      return rows[0] ?? null;
+    }
+    throw e;
+  }
 }
 
 /**
@@ -66,6 +82,9 @@ export async function login(identifier: string, password: string): Promise<{ ok:
   if (!id || !password) {
     return { ok: false, error: "กรุณากรอก username/email และรหัสผ่าน" };
   }
+  // Ensure the username column exists for tables created before that migration.
+  // Idempotent — only does work the first time.
+  await ensureSchema();
   const sql = getSql();
   const rows = await sql<AdminRow[]>`
     select id, username, email, password_hash, display_name, role,
