@@ -24,7 +24,7 @@ export default async function EditProjectPage(props: PageProps<"/admin/projects/
   if (!project) notFound();
 
   return (
-    <AdminShell user={{ displayName: admin.display_name, email: admin.email, role: admin.role }}>
+    <AdminShell user={{ displayName: admin.display_name, username: admin.username, email: admin.email, role: admin.role }}>
       <Link href="/admin/projects" className="inline-flex items-center gap-1.5 text-xs text-brand-600 font-semibold hover:gap-2 transition-all mb-3">
         <ArrowLeft className="w-3.5 h-3.5" />
         กลับสู่รายการโครงการ

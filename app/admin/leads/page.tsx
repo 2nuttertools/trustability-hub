@@ -29,7 +29,7 @@ export default async function AdminLeadsPage(props: PageProps<"/admin/leads">) {
   ]);
 
   return (
-    <AdminShell user={{ displayName: admin.display_name, email: admin.email, role: admin.role }}>
+    <AdminShell user={{ displayName: admin.display_name, username: admin.username, email: admin.email, role: admin.role }}>
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-1">Leads ({stats.total})</h1>
         <p className="text-sm text-muted-foreground">รายชื่อลูกค้าที่กรอก contact form</p>

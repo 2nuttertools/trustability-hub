@@ -22,7 +22,7 @@ export default async function AdminArticlesPage() {
   const articles = await listArticlesAdmin();
 
   return (
-    <AdminShell user={{ displayName: admin.display_name, email: admin.email, role: admin.role }}>
+    <AdminShell user={{ displayName: admin.display_name, username: admin.username, email: admin.email, role: admin.role }}>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold mb-1">บทความ ({articles.length})</h1>

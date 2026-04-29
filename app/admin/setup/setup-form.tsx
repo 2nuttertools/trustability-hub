@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 
 export function SetupForm() {
   const [displayName, setDisplayName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -46,7 +47,7 @@ export function SetupForm() {
           return;
         }
         startTransition(async () => {
-          const result = await runSetup({ displayName, email, password });
+          const result = await runSetup({ displayName, username, email, password });
           if (result.ok) {
             setDone(true);
             setTimeout(() => router.push("/admin/login"), 1500);
@@ -62,6 +63,16 @@ export function SetupForm() {
           onChange={(e) => setDisplayName(e.target.value)}
           placeholder="เช่น Mac Tee"
           className="w-full px-4 py-2.5 rounded-xl border border-border bg-muted/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 text-sm disabled:opacity-50"
+        />
+      </Field>
+
+      <Field label="Username">
+        <input
+          type="text" required minLength={3} maxLength={32} value={username} disabled={pending}
+          onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, ""))}
+          placeholder="เช่น mac, admin, mactee"
+          pattern="[a-z0-9_.\-]{3,32}"
+          className="w-full px-4 py-2.5 rounded-xl border border-border bg-muted/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 text-sm disabled:opacity-50 font-mono"
         />
       </Field>
 

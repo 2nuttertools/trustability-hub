@@ -26,7 +26,7 @@ export function AdminShell({
   user,
   children,
 }: {
-  user: { displayName: string; email: string; role: "super-admin" | "admin" };
+  user: { displayName: string; username?: string; email: string; role: "super-admin" | "admin" };
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -76,7 +76,10 @@ export function AdminShell({
         <div className="p-3 border-t border-border">
           <div className="px-3 py-2.5 rounded-lg bg-muted/40 mb-2">
             <p className="text-sm font-semibold leading-tight truncate">{user.displayName}</p>
-            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+            {user.username && (
+              <p className="text-xs text-brand-700 font-mono truncate">@{user.username}</p>
+            )}
+            <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
             <span className={cn(
               "inline-block text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full mt-1.5",
               user.role === "super-admin"

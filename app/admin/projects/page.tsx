@@ -23,7 +23,7 @@ export default async function AdminProjectsPage() {
   const projects = await listProjectsAdmin();
 
   return (
-    <AdminShell user={{ displayName: admin.display_name, email: admin.email, role: admin.role }}>
+    <AdminShell user={{ displayName: admin.display_name, username: admin.username, email: admin.email, role: admin.role }}>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold mb-1">โครงการ ({projects.length})</h1>

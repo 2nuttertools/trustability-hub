@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 interface AdminListItem {
   id: string;
+  username: string;
   email: string;
   display_name: string;
   role: AdminRole;
@@ -64,6 +65,7 @@ export function UsersClient({ admins, currentAdminId }: { admins: AdminListItem[
 
 function AddAdminForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const [displayName, setDisplayName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<AdminRole>("admin");
@@ -79,7 +81,7 @@ function AddAdminForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
           e.preventDefault();
           setError(null);
           startTransition(async () => {
-            const r = await createAdminAction({ displayName, email, password, role });
+            const r = await createAdminAction({ displayName, username, email, password, role });
             if (r.ok) onSuccess();
             else setError(r.error ?? "Failed");
           });
@@ -87,6 +89,13 @@ function AddAdminForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
       >
         <Field label="ชื่อแสดง">
           <input type="text" required value={displayName} disabled={pending} onChange={(e) => setDisplayName(e.target.value)} className="input" placeholder="เช่น Admin คุณ A" />
+        </Field>
+        <Field label="Username">
+          <input
+            type="text" required minLength={3} maxLength={32} value={username} disabled={pending}
+            onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, ""))}
+            className="input font-mono" placeholder="เช่น admin1, sales-a"
+          />
         </Field>
         <Field label="Email">
           <input type="email" required value={email} disabled={pending} onChange={(e) => setEmail(e.target.value)} className="input" placeholder="user@example.com" />
@@ -205,7 +214,11 @@ function AdminRowItem({
               {admin.role}
             </span>
           </div>
-          <p className="text-xs text-muted-foreground truncate">{admin.email}</p>
+          <p className="text-xs text-muted-foreground truncate">
+            <span className="font-mono text-brand-700">@{admin.username}</span>
+            <span className="mx-1.5">·</span>
+            {admin.email}
+          </p>
           <p className="text-[10px] text-muted-foreground mt-0.5">
             สร้างเมื่อ {fmtDate(admin.created_at)} • Login ล่าสุด {fmtDate(admin.last_login_at)}
           </p>

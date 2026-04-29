@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { loginAction } from "./actions";
 
 export function LoginForm() {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -19,7 +19,7 @@ export function LoginForm() {
         e.preventDefault();
         setError(null);
         startTransition(async () => {
-          const result = await loginAction({ email, password });
+          const result = await loginAction({ identifier, password });
           if (result.ok) {
             router.push("/admin");
             router.refresh();
@@ -30,11 +30,12 @@ export function LoginForm() {
       }}
     >
       <label className="block">
-        <span className="text-xs font-semibold text-foreground/70 uppercase tracking-wider mb-1.5 block">Email</span>
+        <span className="text-xs font-semibold text-foreground/70 uppercase tracking-wider mb-1.5 block">Username หรือ Email</span>
         <input
-          type="email" required value={email} disabled={pending}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
+          type="text" required value={identifier} disabled={pending}
+          onChange={(e) => setIdentifier(e.target.value)}
+          autoComplete="username"
+          placeholder="ใส่ username หรือ email"
           className="w-full px-4 py-2.5 rounded-xl border border-border bg-muted/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 text-sm disabled:opacity-50"
         />
       </label>

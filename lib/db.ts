@@ -40,6 +40,16 @@ export async function ensureSchema(): Promise<void> {
       last_login_at timestamptz
     );
   `;
+  // Backfill: add username column to existing tables. For existing admins, default
+  // username = part of email before "@", or whole email if no @.
+  await sql`alter table admins add column if not exists username text`;
+  await sql`
+    update admins set username = lower(split_part(email, '@', 1))
+    where username is null
+  `;
+  // Make non-null + unique only after backfill so first migration works.
+  await sql`alter table admins alter column username set not null`;
+  await sql`create unique index if not exists admins_username_idx on admins (lower(username))`;
   await sql`
     create table if not exists leads (
       id           uuid primary key default gen_random_uuid(),

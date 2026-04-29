@@ -5,6 +5,7 @@ import { createAdmin } from "@/lib/auth";
 
 export async function runSetup(input: {
   displayName: string;
+  username: string;
   email: string;
   password: string;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -13,6 +14,7 @@ export async function runSetup(input: {
     return { ok: false, error: "ระบบตั้งค่าแล้ว — โปรดไปหน้า Login" };
   }
   const result = await createAdmin({
+    username: input.username,
     email: input.email,
     password: input.password,
     displayName: input.displayName,

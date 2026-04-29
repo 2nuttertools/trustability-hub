@@ -14,6 +14,7 @@ async function requireSuperAdmin() {
 }
 
 export async function createAdminAction(input: {
+  username: string;
   email: string;
   password: string;
   displayName: string;

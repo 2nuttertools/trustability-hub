@@ -18,7 +18,7 @@ export default async function AdminUsersPage() {
   const admins = await listAdmins();
 
   return (
-    <AdminShell user={{ displayName: admin.display_name, email: admin.email, role: admin.role }}>
+    <AdminShell user={{ displayName: admin.display_name, username: admin.username, email: admin.email, role: admin.role }}>
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-1">ผู้ดูแลระบบ ({admins.length})</h1>
         <p className="text-sm text-muted-foreground">

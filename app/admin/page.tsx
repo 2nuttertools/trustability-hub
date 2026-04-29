@@ -38,7 +38,7 @@ export default async function AdminDashboard() {
   }
 
   return (
-    <AdminShell user={{ displayName: admin.display_name, email: admin.email, role: admin.role }}>
+    <AdminShell user={{ displayName: admin.display_name, username: admin.username, email: admin.email, role: admin.role }}>
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-1">สวัสดี, {admin.display_name} 👋</h1>
         <p className="text-sm text-muted-foreground">ภาพรวม Trustability Hub Admin</p>
