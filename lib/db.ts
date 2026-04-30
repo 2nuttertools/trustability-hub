@@ -1,22 +1,22 @@
-import postgres from "postgres";
+import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
 
 const url = process.env.DATABASE_URL;
 
-let _sql: postgres.Sql | null = null;
+let _sql: NeonQueryFunction<false, false> | null = null;
 
-export function getSql(): postgres.Sql {
+/**
+ * Returns a typed sql tagged-template function backed by Neon's HTTP driver.
+ * Each call is a single HTTP request (no TCP/TLS handshake to manage). This
+ * is purpose-built for Vercel serverless where Lambdas come and go.
+ */
+export function getSql(): NeonQueryFunction<false, false> {
   if (!url) {
     throw new Error(
       "DATABASE_URL is not set. Provision a Postgres database (Neon recommended) and add the URL to your environment.",
     );
   }
   if (!_sql) {
-    _sql = postgres(url, {
-      ssl: "require",
-      max: 5,
-      idle_timeout: 30,
-      connect_timeout: 10,
-    });
+    _sql = neon(url);
   }
   return _sql;
 }
@@ -29,7 +29,7 @@ export const isDbConfigured = Boolean(url);
  *
  * Note: Vercel cold-start spawns a fresh instance, so the first request after
  * inactivity still pays the schema-init cost. The DDL statements are no-ops
- * once tables exist, so the cost is mostly Postgres round-trips (~100-300ms).
+ * once tables exist, so the cost is mostly HTTP round-trips.
  */
 let _schemaPromise: Promise<void> | null = null;
 export function ensureSchema(): Promise<void> {
@@ -56,7 +56,7 @@ async function runSchemaSetup(): Promise<void> {
       role         text not null default 'admin',
       created_at   timestamptz not null default now(),
       last_login_at timestamptz
-    );
+    )
   `;
   // Backfill: add username column to existing tables. For existing admins, default
   // username = part of email before "@", or whole email if no @.
@@ -82,10 +82,10 @@ async function runSchemaSetup(): Promise<void> {
       notes        text,
       created_at   timestamptz not null default now(),
       updated_at   timestamptz not null default now()
-    );
+    )
   `;
-  await sql`create index if not exists leads_status_idx on leads (status);`;
-  await sql`create index if not exists leads_created_idx on leads (created_at desc);`;
+  await sql`create index if not exists leads_status_idx on leads (status)`;
+  await sql`create index if not exists leads_created_idx on leads (created_at desc)`;
 
   await sql`
     create table if not exists projects (
@@ -96,10 +96,10 @@ async function runSchemaSetup(): Promise<void> {
       created_at   timestamptz not null default now(),
       updated_at   timestamptz not null default now(),
       updated_by   uuid references admins(id) on delete set null
-    );
+    )
   `;
-  await sql`create index if not exists projects_featured_idx on projects (featured) where featured;`;
-  await sql`create index if not exists projects_sort_idx on projects (sort_order, updated_at desc);`;
+  await sql`create index if not exists projects_featured_idx on projects (featured) where featured`;
+  await sql`create index if not exists projects_sort_idx on projects (sort_order, updated_at desc)`;
 
   await sql`
     create table if not exists articles (
@@ -109,19 +109,19 @@ async function runSchemaSetup(): Promise<void> {
       created_at   timestamptz not null default now(),
       updated_at   timestamptz not null default now(),
       updated_by   uuid references admins(id) on delete set null
-    );
+    )
   `;
-  await sql`create index if not exists articles_pub_idx on articles (published_at desc);`;
+  await sql`create index if not exists articles_pub_idx on articles (published_at desc)`;
 }
 
 export async function hasAnyProject(): Promise<boolean> {
   const sql = getSql();
-  const rows = await sql<{ count: string }[]>`select count(*)::text as count from projects`;
+  const rows = (await sql`select count(*)::text as count from projects`) as { count: string }[];
   return Number(rows[0]?.count ?? 0) > 0;
 }
 
 export async function hasAnyAdmin(): Promise<boolean> {
   const sql = getSql();
-  const rows = await sql<{ count: string }[]>`select count(*)::text as count from admins`;
+  const rows = (await sql`select count(*)::text as count from admins`) as { count: string }[];
   return Number(rows[0]?.count ?? 0) > 0;
 }

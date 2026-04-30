@@ -99,10 +99,10 @@ async function dbProjects(): Promise<Project[] | null> {
   if (!isDbConfigured) return null;
   try {
     const sql = getSql();
-    const rows = await sql<{ data: Project }[]>`
+    const rows = (await sql`
       select data from projects
       order by featured desc, sort_order asc, updated_at desc
-    `;
+    `) as { data: Project }[];
     if (rows.length === 0) return null;
     return rows.map((r) => r.data);
   } catch (err) {
@@ -120,7 +120,7 @@ export async function getProjectBySlug(slug: string): Promise<Project | null> {
   if (isDbConfigured) {
     try {
       const sql = getSql();
-      const rows = await sql<{ data: Project }[]>`select data from projects where slug = ${slug} limit 1`;
+      const rows = (await sql`select data from projects where slug = ${slug} limit 1`) as { data: Project }[];
       if (rows[0]) return rows[0].data;
     } catch {
       // fall through to JSON
@@ -162,9 +162,9 @@ export async function getArticles(limit = 6): Promise<Article[]> {
   if (isDbConfigured) {
     try {
       const sql = getSql();
-      const rows = await sql<{ data: Article }[]>`
+      const rows = (await sql`
         select data from articles order by published_at desc, updated_at desc limit ${limit}
-      `;
+      `) as { data: Article }[];
       if (rows.length > 0) return rows.map((r) => r.data);
     } catch {
       // fall through to JSON

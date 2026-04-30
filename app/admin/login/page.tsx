@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { Building2 } from "lucide-react";
 import { hasAnyAdmin, isDbConfigured } from "@/lib/db";
 import { getCurrentAdmin } from "@/lib/auth";
@@ -11,12 +12,19 @@ export const dynamic = "force-dynamic";
 export default async function LoginPage() {
   if (!isDbConfigured) redirect("/admin/setup");
 
-  // Already logged in?
-  const admin = await getCurrentAdmin().catch(() => null);
-  if (admin) redirect("/admin");
+  // Common case: visitor with no session cookie. Skip both DB queries
+  // and just render the form. Saves 2 round-trips on every fresh login.
+  const cookieStore = await cookies();
+  const hasSession = Boolean(cookieStore.get("th_admin_session")?.value);
 
-  // No admin yet? Go to setup
-  if (!(await hasAnyAdmin().catch(() => true))) redirect("/admin/setup");
+  if (hasSession) {
+    const admin = await getCurrentAdmin().catch(() => null);
+    if (admin) redirect("/admin");
+    // Stale cookie — fall through to render the form.
+  } else {
+    // Only ask "is the system already set up" if we're at the very start.
+    if (!(await hasAnyAdmin().catch(() => true))) redirect("/admin/setup");
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-brand-50 via-white to-accent/10">

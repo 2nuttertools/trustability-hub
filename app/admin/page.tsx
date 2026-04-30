@@ -27,14 +27,16 @@ export default async function AdminDashboard() {
   let projectCount = 0;
   try {
     const sql = getSql();
-    const [leadRows, adminRows, articleRows, projectRows] = await Promise.all([
-      sql<{ total: string; new_count: string }[]>`
-        select count(*)::text as total, count(*) filter (where status = 'new')::text as new_count from leads
-      `,
-      sql<{ c: string }[]>`select count(*)::text as c from admins`,
-      sql<{ c: string }[]>`select count(*)::text as c from articles`,
-      sql<{ c: string }[]>`select count(*)::text as c from projects`,
+    const [leadRowsRaw, adminRowsRaw, articleRowsRaw, projectRowsRaw] = await Promise.all([
+      sql`select count(*)::text as total, count(*) filter (where status = 'new')::text as new_count from leads`,
+      sql`select count(*)::text as c from admins`,
+      sql`select count(*)::text as c from articles`,
+      sql`select count(*)::text as c from projects`,
     ]);
+    const leadRows = leadRowsRaw as { total: string; new_count: string }[];
+    const adminRows = adminRowsRaw as { c: string }[];
+    const articleRows = articleRowsRaw as { c: string }[];
+    const projectRows = projectRowsRaw as { c: string }[];
     leadStats = { total: Number(leadRows[0].total), new: Number(leadRows[0].new_count) };
     adminCount = Number(adminRows[0].c);
     articleCount = Number(articleRows[0].c);

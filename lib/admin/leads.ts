@@ -23,7 +23,7 @@ export async function listLeads(filter?: { status?: LeadStatus | "all"; search?:
   const search = filter?.search?.trim() || null;
 
   if (status && search) {
-    return await sql<LeadRow[]>`
+    return (await sql`
       select id, name, phone, email, budget, message, project_slug, source,
         status, notes, created_at::text, updated_at::text
       from leads
@@ -31,42 +31,42 @@ export async function listLeads(filter?: { status?: LeadStatus | "all"; search?:
         and (name ilike ${"%" + search + "%"} or phone ilike ${"%" + search + "%"} or email ilike ${"%" + search + "%"})
       order by created_at desc
       limit 500
-    `;
+    `) as LeadRow[];
   }
   if (status) {
-    return await sql<LeadRow[]>`
+    return (await sql`
       select id, name, phone, email, budget, message, project_slug, source,
         status, notes, created_at::text, updated_at::text
       from leads
       where status = ${status}
       order by created_at desc
       limit 500
-    `;
+    `) as LeadRow[];
   }
   if (search) {
-    return await sql<LeadRow[]>`
+    return (await sql`
       select id, name, phone, email, budget, message, project_slug, source,
         status, notes, created_at::text, updated_at::text
       from leads
       where (name ilike ${"%" + search + "%"} or phone ilike ${"%" + search + "%"} or email ilike ${"%" + search + "%"})
       order by created_at desc
       limit 500
-    `;
+    `) as LeadRow[];
   }
-  return await sql<LeadRow[]>`
+  return (await sql`
     select id, name, phone, email, budget, message, project_slug, source,
       status, notes, created_at::text, updated_at::text
     from leads
     order by created_at desc
     limit 500
-  `;
+  `) as LeadRow[];
 }
 
 export async function getLeadStats(): Promise<Record<LeadStatus | "total", number>> {
   const sql = getSql();
-  const rows = await sql<{ status: LeadStatus; c: string }[]>`
+  const rows = (await sql`
     select status, count(*)::text as c from leads group by status
-  `;
+  `) as { status: LeadStatus; c: string }[];
   const stats: Record<LeadStatus | "total", number> = {
     total: 0,
     new: 0,

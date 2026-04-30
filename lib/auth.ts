@@ -50,11 +50,11 @@ export async function getCurrentAdmin(): Promise<AdminRow | null> {
   if (!session.userId) return null;
   const sql = getSql();
   try {
-    const rows = await sql<AdminRow[]>`
+    const rows = (await sql`
       select id, username, email, password_hash, display_name, role,
         created_at::text, last_login_at::text
       from admins where id = ${session.userId} limit 1
-    `;
+    `) as AdminRow[];
     return rows[0] ?? null;
   } catch (e) {
     // Likely missing username column on freshly-deployed migration.
@@ -62,11 +62,11 @@ export async function getCurrentAdmin(): Promise<AdminRow | null> {
     const msg = (e as Error).message ?? "";
     if (msg.includes("column") && msg.includes("username")) {
       await ensureSchema();
-      const rows = await sql<AdminRow[]>`
+      const rows = (await sql`
         select id, username, email, password_hash, display_name, role,
           created_at::text, last_login_at::text
         from admins where id = ${session.userId} limit 1
-      `;
+      `) as AdminRow[];
       return rows[0] ?? null;
     }
     throw e;
@@ -86,13 +86,13 @@ export async function login(identifier: string, password: string): Promise<{ ok:
   // Idempotent — only does work the first time.
   await ensureSchema();
   const sql = getSql();
-  const rows = await sql<AdminRow[]>`
+  const rows = (await sql`
     select id, username, email, password_hash, display_name, role,
       created_at::text, last_login_at::text
     from admins
     where lower(username) = ${id} or lower(email) = ${id}
     limit 1
-  `;
+  `) as AdminRow[];
   const admin = rows[0];
   if (!admin) return { ok: false, error: "username หรือรหัสผ่านไม่ถูกต้อง" };
   const valid = await bcrypt.compare(password, admin.password_hash);
@@ -138,11 +138,11 @@ export async function createAdmin(input: {
   const hash = await bcrypt.hash(input.password, 10);
   const sql = getSql();
   try {
-    const rows = await sql<{ id: string }[]>`
+    const rows = (await sql`
       insert into admins (username, email, password_hash, display_name, role)
       values (${username}, ${email}, ${hash}, ${input.displayName.trim()}, ${input.role})
       returning id
-    `;
+    `) as { id: string }[];
     return { ok: true, id: rows[0].id };
   } catch (e) {
     const err = e as { code?: string; message?: string; constraint_name?: string };
@@ -157,11 +157,11 @@ export async function createAdmin(input: {
 
 export async function listAdmins(): Promise<Omit<AdminRow, "password_hash">[]> {
   const sql = getSql();
-  const rows = await sql<AdminRow[]>`
+  const rows = (await sql`
     select id, username, email, password_hash, display_name, role,
       created_at::text, last_login_at::text
     from admins order by created_at asc
-  `;
+  `) as AdminRow[];
   return rows.map(({ password_hash: _ph, ...rest }) => rest);
 }
 

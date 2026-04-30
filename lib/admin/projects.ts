@@ -13,8 +13,8 @@ let _seedChecked = false;
 export async function seedProjectsIfEmpty(): Promise<{ seeded: number }> {
   if (_seedChecked) return { seeded: 0 };
   const sql = getSql();
-  const [{ count }] = await sql<{ count: string }[]>`select count(*)::text as count from projects`;
-  if (Number(count) > 0) {
+  const countRows = (await sql`select count(*)::text as count from projects`) as { count: string }[];
+  if (Number(countRows[0]?.count ?? 0) > 0) {
     _seedChecked = true;
     return { seeded: 0 };
   }
@@ -24,7 +24,12 @@ export async function seedProjectsIfEmpty(): Promise<{ seeded: number }> {
     const p = seedProjects[i];
     await sql`
       insert into projects (slug, data, featured, sort_order)
-      values (${p.slug}, ${sql.json(JSON.parse(JSON.stringify(p)))}, ${p.featured ?? false}, ${i})
+      values (
+        ${p.slug},
+        ${JSON.stringify(p)}::jsonb,
+        ${p.featured ?? false},
+        ${i}
+      )
       on conflict (slug) do nothing
     `;
     seeded++;
@@ -41,16 +46,16 @@ export async function listProjectsAdmin(): Promise<{
   updated_at: string;
 }[]> {
   const sql = getSql();
-  return await sql`
+  return (await sql`
     select slug, data, featured, sort_order, updated_at::text
     from projects
     order by featured desc, sort_order asc, updated_at desc
-  ` as unknown as { slug: string; data: Project; featured: boolean; sort_order: number; updated_at: string }[];
+  `) as { slug: string; data: Project; featured: boolean; sort_order: number; updated_at: string }[];
 }
 
 export async function getProjectAdmin(slug: string): Promise<Project | null> {
   const sql = getSql();
-  const rows = await sql<{ data: Project }[]>`select data from projects where slug = ${slug} limit 1`;
+  const rows = (await sql`select data from projects where slug = ${slug} limit 1`) as { data: Project }[];
   return rows[0]?.data ?? null;
 }
 
@@ -65,7 +70,14 @@ export async function upsertProject(
   try {
     await sql`
       insert into projects (slug, data, featured, sort_order, updated_by, updated_at)
-      values (${project.slug}, ${sql.json(JSON.parse(JSON.stringify(project)))}, ${project.featured ?? false}, 0, ${adminId}, now())
+      values (
+        ${project.slug},
+        ${JSON.stringify(project)}::jsonb,
+        ${project.featured ?? false},
+        0,
+        ${adminId},
+        now()
+      )
       on conflict (slug) do update set
         data = excluded.data,
         featured = excluded.featured,
